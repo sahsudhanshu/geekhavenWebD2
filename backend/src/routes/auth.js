@@ -5,11 +5,14 @@ import generateToken from './../utils/tokenGenerator.js'
 const registerUser = Router()
 registerUser.post('/', async (req, res) => {
     const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+        return res.status(400).json({ message: "Proper inputs not provided !" })
+    }
     try {
         const userCheck = await User.findOne({ email: email })
 
         if (userCheck) {
-            return res.status(400).json({ message: "User Already Exists!" })
+            return res.status(400).json({ message: "Email Already Exists!" })
         }
 
         const user = await User.create({ name, email, password });
@@ -45,7 +48,8 @@ loginUser.post('/', async (req, res) => {
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
         }
-    } catch (error) {
+    } catch (e) {
+        console.log(e)
         res.status(500).json({ message: 'Server Error' });
     }
 })
