@@ -2,7 +2,7 @@ import express from "express";
 import 'dotenv/config'
 import connectDB from "./src/config/database.js";
 import cors from 'cors'
-import { loginUser, registerUser, product } from "./src/routes/index.js";
+import { loginUser, registerUser, product, cart } from "./src/routes/index.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +17,7 @@ app.get('/', (req, res) => {
 app.use('/api/v1/auth/register', registerUser)
 app.use('/api/v1/auth/login', loginUser)
 app.use('/api/v1/products', product)
+app.use('/api/v1/cart', cart)
 
 connectDB(MONGODB_CONNECTION_URI, DB_NAME).then(() => {
     app.listen(PORT, () => {

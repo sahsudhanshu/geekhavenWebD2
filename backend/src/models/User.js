@@ -9,7 +9,16 @@ const userSchema = new Schema(
             unique: true, lowercase: true, trim: true
         },
         password: { type: String, required: true },
-        contactNumber: { type: String }
+        contactNumber: { type: String },
+        addresses: [{
+            name: { type: String, required: true },
+            mobileNumber: { type: String, required: true },
+            address_line_1: { type: String, required: true },
+            address_line_2: String,
+            pincode: { type: Number, required: true },
+            state: { type: String, required: true },
+            district: { type: String, required: true }
+        }]
     },
     { timestamps: true }
 );

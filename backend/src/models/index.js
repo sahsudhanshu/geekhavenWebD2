@@ -1,2 +1,4 @@
 import User from "./User.js";
-export { User }
+import Cart from './Cart.js'
+import Product from './Product.js'
+export { User, Cart, Product }
