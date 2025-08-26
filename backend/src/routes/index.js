@@ -1,2 +1,3 @@
 import { registerUser, loginUser } from './auth.js'
-export { registerUser, loginUser }
+import { product } from './product.js'
+export { registerUser, loginUser, product }

@@ -2,8 +2,7 @@ import express from "express";
 import 'dotenv/config'
 import connectDB from "./src/config/database.js";
 import cors from 'cors'
-import { loginUser, registerUser } from "./src/routes/auth.js";
-// import rateLimiter from "./src/utils/rateLimiter.js";
+import { loginUser, registerUser, product } from "./src/routes/index.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +16,7 @@ app.get('/', (req, res) => {
 })
 app.use('/api/v1/auth/register', registerUser)
 app.use('/api/v1/auth/login', loginUser)
-// app.use('/api/v1/user', user)
+app.use('/api/v1/products', product)
 
 connectDB(MONGODB_CONNECTION_URI, DB_NAME).then(() => {
     app.listen(PORT, () => {
