@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 import { genSalt, hash, compare } from "bcryptjs";
 
 const userSchema = new Schema(
@@ -18,6 +18,16 @@ const userSchema = new Schema(
             pincode: { type: Number, required: true },
             state: { type: String, required: true },
             district: { type: String, required: true }
+        }],
+        likedProducts: [{
+            type: mongoose.Schema.ObjectId,
+            ref: 'Product',
+            require: true
+        }],
+        bookmarkedProducts: [{
+            type: mongoose.Schema.ObjectId,
+            ref: 'Product',
+            require: true
         }]
     },
     { timestamps: true }

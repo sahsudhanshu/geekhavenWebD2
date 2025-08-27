@@ -17,9 +17,13 @@ cart.get('/', authMiddleware, async (req, res) => {
     }
 })
 
-cart.post('/', authMiddleware, async (req, res) => {
-    const { pId, quantity } = req.body;
+cart.post('/:id', authMiddleware, async (req, res) => {
+    const pId = req.params.id
+    const { quantity } = req.body;
     try {
+        if (quantity === undefined || isNaN(quantity)) {
+            return res.status(400).json({ message: 'Quantity is required and must be a number.' });
+        }
         let cart = await Cart.findOne({ user: req.user.id })
         if (!cart) {
             cart = new Cart({ user: req.user.id, items: [] })
@@ -37,6 +41,38 @@ cart.post('/', authMiddleware, async (req, res) => {
     } catch (e) {
         console.log(e)
         res.status(500).json({ message: 'Server Error' });
+    }
+})
+
+cart.put('/:id', authMiddleware, async (req, res) => {
+    const { pId } = req.params
+    const { quantity } = req.body;
+
+    if (quantity === undefined || isNaN(quantity)) {
+        return res.status(400).json({ message: 'Quantity is required and must be a number.' });
+    }
+
+    try {
+        const cart = await Cart.findOne({ user: req.user.id });
+        if (!cart) {
+            return res.status(404).json({ message: 'Cart not found' });
+        }
+        const itemToUpdate = cart.items.find(item => item.product.toString() === pId);
+        if (!itemToUpdate) {
+            return res.status(404).json({ message: 'Item not found in cart' });
+        }
+        if (quantity <= 0) {
+            cart.items = cart.items.filter(item => item.product.toString() !== pId);
+        } else {
+            itemToUpdate.quantity = quantity;
+        }
+        await cart.save();
+        const updatedCart = await cart.populate('items.product', 'name price imageUrl');
+        res.json(updatedCart);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Server Error');
     }
 })
 
