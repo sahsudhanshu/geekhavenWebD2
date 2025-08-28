@@ -1,6 +1,8 @@
 import { Schema, model } from 'mongoose';
+import { generateSku } from '../utils/sku.js';
 
 const productSchema = new Schema({
+    sku: { type: String, unique: true, immutable: true },
     name: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },
@@ -32,5 +34,12 @@ const productSchema = new Schema({
     isAvailable: { type: Boolean, default: true }
 
 }, { timestamps: true });
+
+productSchema.pre("save", function (next) {
+    if (this.isNew) {
+        this.sku = generateSku(this._id)
+    }
+    next()
+})
 
 export default model('Product', productSchema);

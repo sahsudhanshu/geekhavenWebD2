@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Product } from "../models/index.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import authMiddleware from "../utils/authMiddleware.js";
 
 const product = Router()
 product.post('/', authMiddleware, async (req, res) => {
