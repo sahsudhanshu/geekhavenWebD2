@@ -2,21 +2,19 @@ import { Router } from "express";
 import { User } from "../models/index.js";
 import generateToken from './../utils/tokenGenerator.js'
 
-const registerUser = Router()
-registerUser.post('/', async (req, res) => {
+const auth = Router()
+auth.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
+    console.log(req.body)
     if (!name || !email || !password) {
         return res.status(400).json({ message: "Proper inputs not provided !" })
     }
     try {
         const userCheck = await User.findOne({ email: email })
-
         if (userCheck) {
             return res.status(400).json({ message: "Email Already Exists!" })
         }
-
         const user = await User.create({ name, email, password });
-
         if (user) {
             return res.status(201).json({
                 message: 'User registered successfully',
@@ -33,8 +31,7 @@ registerUser.post('/', async (req, res) => {
 })
 
 
-const loginUser = Router()
-loginUser.post('/', async (req, res) => {
+auth.post('/login', async (req, res) => {
     const { email, password } = req.body
     try {
         const user = await User.findOne({ email })
@@ -54,4 +51,4 @@ loginUser.post('/', async (req, res) => {
     }
 })
 
-export { loginUser, registerUser };
+export { auth };

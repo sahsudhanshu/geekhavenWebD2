@@ -31,7 +31,8 @@ const productSchema = new Schema({
         default: 'Active'
     },
     stock: { type: Number, default: 1 },
-    isAvailable: { type: Boolean, default: true }
+    isAvailable: { type: Boolean, default: true },
+    location: {}
 
 }, { timestamps: true });
 

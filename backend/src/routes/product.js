@@ -21,15 +21,40 @@ product.post('/', authMiddleware, async (req, res) => {
 
 product.get('/', async (req, res) => {
     try {
-        const products = await Product.find({})
+        const { cursor, limit = 10, q, category, min, max } = req.query
+        const query = {}
+        if (q) {
+            query.name = { $regex: q, $options: "i" }
+            query.description = { $regex: q, $options: "i" }
+        }
+        if (category) {
+            query.category = category
+        }
+        if (min || max) {
+            query.price = {}
+            if (min) query.price.$gte = Number(min)
+            if (max) query.price.$lte = Number(max)
+        }
+        if (cursor) {
+            query.createdAt = { $lt: new Date(cursor) }
+        }
+        const products = await Product.find(query)
             .populate('seller', 'name email')
-            .sort({ createdAt: -1 });
-        res.json(products);
+            .sort({ createdAt: -1 })
+            .limit(Number(limit) + 1)
+        let nextCursor = null
+        if (products.length > limit) {
+            const nextItem = products[limit - 1]
+            nextCursor = nextItem.createdAt.toISOString()
+            products.pop()
+        }
+        res.json({ items: products, nextCursor })
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Server Error');
+        console.error(error.message)
+        res.status(500).send('Server Error')
     }
 })
+
 product.get('/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)

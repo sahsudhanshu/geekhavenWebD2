@@ -2,7 +2,7 @@ import express from "express";
 import 'dotenv/config'
 import connectDB from "./src/config/database.js";
 import cors from 'cors'
-import { loginUser, registerUser, product, cart } from "./src/routes/index.js";
+import { auth, product, cart } from "./src/routes/index.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,11 +11,16 @@ const DB_NAME = process.env.DB_NAME || 'Test'
 
 app.use(cors())
 app.use(express.json());
+app.use(async (req, res, next) => {
+    console.log(req.query)
+    console.log(req.params)
+    console.log(req.body)
+    next()
+})
 app.get('/', (req, res) => {
     res.json({ message: "Server is Running!" })
 })
-app.use('/api/v1/auth/register', registerUser)
-app.use('/api/v1/auth/login', loginUser)
+app.use('/api/v1/auth', auth)
 app.use('/api/v1/products', product)
 app.use('/api/v1/cart', cart)
 
