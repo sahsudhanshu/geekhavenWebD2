@@ -3,15 +3,17 @@ const BASE_URL = import.meta.env.VITE_BACKEND_BASE_URL;
 async function fetchAPI(endpoint: string, options: RequestInit = {}, token?: string, signal?: AbortSignal) {
     const headers: HeadersInit = {
         ...(options.headers || {}),
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: token } : {}),
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: token.startsWith('Bearer ') ? token : `Bearer ${token}` } : {}),
     };
     const response = await fetch(BASE_URL + endpoint, { ...options, headers, signal });
     const data = await response.json().catch(() => null);
+    const result = { status: response.status, data }
+    console.log(response)
     if (!response.ok) {
         throw new Error(data?.message || response.statusText);
     }
-    return data;
+    return result;
 }
 const API = {
     get: (endpoint: string, token?: string, signal?: AbortSignal) =>
