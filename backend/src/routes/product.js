@@ -23,13 +23,13 @@ product.post('/', authMiddleware, requireSeller, async (req, res) => {
 
 product.get('/', async (req, res) => {
     try {
-        const { page = 1, limit = 10, q, category, min, max } = req.query;
+        let { cursor, limit = 10, q, category, min, max } = req.query;
+        const lim = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50); // clamp 1..50
+
         const query = {};
         if (q) {
-            query.$or = [
-                { name: { $regex: q, $options: 'i' } },
-                { description: { $regex: q, $options: 'i' } }
-            ];
+            const regex = { $regex: q, $options: 'i' };
+            query.$or = [{ name: regex }, { description: regex }];
         }
         if (category) query.category = category;
         if (min || max) {
@@ -37,18 +37,27 @@ product.get('/', async (req, res) => {
             if (min) query.price.$gte = Number(min);
             if (max) query.price.$lte = Number(max);
         }
-        const pageNum = Number(page);
-        const limitNum = Math.min(Number(limit), 50);
-        const skip = (pageNum - 1) * limitNum;
-        const [items, total] = await Promise.all([
-            Product.find(query)
-                .populate('seller', 'name email')
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limitNum),
-            Product.countDocuments(query)
-        ]);
-        res.json({ items, page: pageNum, total, pages: Math.ceil(total / limitNum) });
+        if (cursor) {
+            const date = new Date(cursor);
+            if (isNaN(date.getTime())) return res.status(400).json({ message: 'Invalid cursor' });
+            query.createdAt = { $lt: date }; // fetch items created before the cursor
+        }
+
+        // Fetch one extra to know if there is a next page
+        const docs = await Product.find(query)
+            .populate('seller', 'name email')
+            .sort({ createdAt: -1, _id: -1 })
+            .limit(lim + 1);
+
+        let nextCursor = null;
+        let items = docs;
+        if (docs.length > lim) {
+            const lastReturned = docs[lim - 1];
+            nextCursor = lastReturned.createdAt.toISOString();
+            items = docs.slice(0, lim);
+        }
+
+        res.json({ items, nextCursor });
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
@@ -69,6 +78,33 @@ product.get('/mine/list', authMiddleware, requireSeller, async (req, res) => {
             Product.countDocuments({ seller: req.user.id })
         ]);
         res.json({ items, page: pageNum, total, pages: Math.ceil(total / limitNum) });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+product.get('/mine', authMiddleware, requireSeller, async (req, res) => {
+    try {
+        let { cursor, limit = 10 } = req.query;
+        const lim = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
+        const query = { seller: req.user.id };
+        if (cursor) {
+            const date = new Date(cursor);
+            if (isNaN(date.getTime())) return res.status(400).json({ message: 'Invalid cursor' });
+            query.createdAt = { $lt: date };
+        }
+        const docs = await Product.find(query)
+            .sort({ createdAt: -1, _id: -1 })
+            .limit(lim + 1);
+        let nextCursor = null;
+        let items = docs;
+        if (docs.length > lim) {
+            const last = docs[lim - 1];
+            nextCursor = last.createdAt.toISOString();
+            items = docs.slice(0, lim);
+        }
+        res.json({ items, nextCursor });
     } catch (e) {
         console.error(e.message);
         res.status(500).json({ message: 'Server Error' });
