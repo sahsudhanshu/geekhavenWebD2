@@ -18,6 +18,8 @@ import { SeedThemeProvider } from './context/seedTheme.tsx';
 import LogsRecentPage from './pages/LogsRecentPage.tsx';
 import SellerDashboardPage from './pages/SellerDashboardPage.tsx';
 import SellerUpgradePage from './pages/SellerUpgradePage.tsx';
+import LikedProductsPage from './pages/LikedProductsPage.tsx';
+import BookmarkedProductsPage from './pages/BookmarkedProductsPage.tsx';
 
 const router = createBrowserRouter([
   {
@@ -57,6 +59,14 @@ const router = createBrowserRouter([
       ,{
         path: 'seller/upgrade',
         element: (<ProtectedRoute><SellerUpgradePage /></ProtectedRoute>)
+      },
+      {
+        path: 'favorites/liked',
+        element: (<ProtectedRoute><LikedProductsPage /></ProtectedRoute>)
+      },
+      {
+        path: 'favorites/bookmarked',
+        element: (<ProtectedRoute><BookmarkedProductsPage /></ProtectedRoute>)
       }
     ],
   },

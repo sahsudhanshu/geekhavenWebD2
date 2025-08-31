@@ -99,7 +99,7 @@ const CartPage: React.FC = () => {
                   <button className="text-red-600 hover:underline ml-2" onClick={() => removeItem(String(item.id))}>Remove</button>
                 </div>
               </div>
-              <div className="font-mono text-sm">${(item.price * item.quantity).toFixed(2)}</div>
+              <div className="font-mono text-sm">₹{(item.price * item.quantity).toFixed(2)}</div>
             </div>
           ))}
         </div>
