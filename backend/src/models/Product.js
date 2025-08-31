@@ -50,7 +50,6 @@ const productSchema = new Schema({
 
 }, { timestamps: true });
 
-// Track price history
 productSchema.add({
     priceHistory: [{ price: Number, at: { type: Date, default: Date.now } }]
 });

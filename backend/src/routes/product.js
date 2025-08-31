@@ -10,12 +10,13 @@ async function optionalAuth(req, _res, next) {
     const header = req.headers.authorization;
     if (header && header.startsWith('Bearer ')) {
         try {
-            // reuse logic from authMiddleware but swallow errors
             const token = header.split(' ')[1];
             const jwtImport = await import('jsonwebtoken');
             const decodedUserId = jwtImport.default.verify(token, process.env.JWT_SECRET).id;
             req.user = await User.findById(decodedUserId).select('-password');
-        } catch { /* ignore invalid token */ }
+        } catch (e) {
+            console.log(e)
+        }
     }
     next();
 }
@@ -37,7 +38,7 @@ product.post('/', authMiddleware, requireSeller, async (req, res) => {
 
 product.get('/', optionalAuth, async (req, res) => {
     try {
-        let { cursor, limit = 10, q, category, min, max } = req.query;
+    let { cursor, limit = 10, q, category, min, max, seller } = req.query;
         const lim = Math.min(Math.max(parseInt(limit, 20) || 10, 1), 50);
 
         const query = {};
@@ -45,7 +46,8 @@ product.get('/', optionalAuth, async (req, res) => {
             const regex = { $regex: q, $options: 'i' };
             query.$or = [{ name: regex }, { description: regex }];
         }
-        if (category) query.category = category;
+    if (category) query.category = category;
+    if (seller) query.seller = seller;
         if (min || max) {
             query.price = {};
             if (min) query.price.$gte = Number(min);
@@ -68,7 +70,6 @@ product.get('/', optionalAuth, async (req, res) => {
             items = docs.slice(0, lim);
         }
 
-        // decorate each item for current user
         if (req.user) {
             const uid = req.user._id.toString();
             items = items.map(p => ({
@@ -313,7 +314,6 @@ product.post('/:id/like', authMiddleware, async (req, res) => {
     }
 });
 
-// bookmark toggle
 product.post('/:id/bookmark', authMiddleware, async (req, res) => {
     try {
         const prod = await Product.findById(req.params.id);

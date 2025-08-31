@@ -23,9 +23,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     res.json({ message: "Server is Running!" })
 })
-app.get(`/${process.env.ROLLNO || 'rollno'}/healthz`, (req, res) => {
-    res.json({ ok: true, ts: Date.now() });
-});
+app.get(`/IIT2024081/healthz`, (req, res) => { res.json({ ok: true, ts: Date.now() }); });
 app.get('/logs/recent', (req, res) => {
     res.json({ items: recentLogs.slice().reverse() });
 });

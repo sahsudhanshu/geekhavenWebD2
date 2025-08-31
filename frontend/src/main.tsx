@@ -20,6 +20,8 @@ import SellerDashboardPage from './pages/SellerDashboardPage.tsx';
 import SellerUpgradePage from './pages/SellerUpgradePage.tsx';
 import LikedProductsPage from './pages/LikedProductsPage.tsx';
 import BookmarkedProductsPage from './pages/BookmarkedProductsPage.tsx';
+import SellerProfilePage from './pages/SellerProfilePage.tsx';
+import HealthzPage from './pages/HealthzPage.tsx';
 
 const router = createBrowserRouter([
   {
@@ -45,7 +47,7 @@ const router = createBrowserRouter([
         element: <CartPage />
       },
       {
-        path: 'logs/recent',
+        path: 'logs',
         element: <LogsRecentPage />
       },
       {
@@ -67,6 +69,14 @@ const router = createBrowserRouter([
       {
         path: 'favorites/bookmarked',
         element: (<ProtectedRoute><BookmarkedProductsPage /></ProtectedRoute>)
+      }
+      ,{
+        path: 'seller/:id',
+        element: <SellerProfilePage />
+      }
+      ,{
+        path: 'IIT2024081/healthz',
+        element: <HealthzPage />
       }
     ],
   },
