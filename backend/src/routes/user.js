@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import User from '../models/User.js';
+import Product from '../models/Product.js';
 import authMiddleware from '../utils/authMiddleware.js';
 import multer from 'multer';
 import cloudinary from '../config/cloudinary.js';
@@ -57,3 +58,47 @@ user.put('/profile', upload.single('avatar'), async (req, res) => {
 });
 
 export default user
+user.get('/liked-products', async (req, res) => {
+    try {
+        let { cursor, limit = 12 } = req.query;
+        const lim = Math.min(Math.max(parseInt(limit, 10) || 12, 1), 50);
+        const u = await User.findById(req.user._id).select('likedProducts');
+        const ids = (u?.likedProducts || []).map(i => i.toString());
+        const query = { _id: { $in: ids } };
+        if (cursor) {
+            const date = new Date(cursor);
+            if (!isNaN(date.getTime())) query.createdAt = { $lt: date };
+        }
+        const docs = await Product.find(query).sort({ createdAt: -1, _id: -1 }).limit(lim + 1);
+        let nextCursor = null;
+        let items = docs;
+        if (docs.length > lim) {
+            const last = docs[lim - 1];
+            nextCursor = last.createdAt.toISOString();
+            items = docs.slice(0, lim);
+        }
+        res.json({ items, nextCursor });
+    } catch (e) { res.status(500).json({ message: 'Server Error' }); }
+});
+user.get('/bookmarked-products', async (req, res) => {
+    try {
+        let { cursor, limit = 12 } = req.query;
+        const lim = Math.min(Math.max(parseInt(limit, 10) || 12, 1), 50);
+        const u = await User.findById(req.user._id).select('bookmarkedProducts');
+        const ids = (u?.bookmarkedProducts || []).map(i => i.toString());
+        const query = { _id: { $in: ids } };
+        if (cursor) {
+            const date = new Date(cursor);
+            if (!isNaN(date.getTime())) query.createdAt = { $lt: date };
+        }
+        const docs = await Product.find(query).sort({ createdAt: -1, _id: -1 }).limit(lim + 1);
+        let nextCursor = null;
+        let items = docs;
+        if (docs.length > lim) {
+            const last = docs[lim - 1];
+            nextCursor = last.createdAt.toISOString();
+            items = docs.slice(0, lim);
+        }
+        res.json({ items, nextCursor });
+    } catch (e) { res.status(500).json({ message: 'Server Error' }); }
+});

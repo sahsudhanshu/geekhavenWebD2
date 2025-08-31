@@ -5,9 +5,10 @@ import { RatingStars } from './RatingStars';
 interface ProductGridProps {
     products: any[];
     loading: boolean;
+    cartIds?: Set<string>;
 }
 
-export const ProductGrid: React.FC<ProductGridProps> = ({ products, loading }) => {
+export const ProductGrid: React.FC<ProductGridProps> = ({ products, loading, cartIds }) => {
     if (loading) return <p className="text-center text-gray-500">Loading...</p>;
     return (
         <>
@@ -20,6 +21,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ products, loading }) =
                             price={p.price}
                             imageUrl={p.images?.[0]?.url || p.images?.[0]}
                             sellerId={p.seller?._id || p.sellerId}
+                            likesCount={p.likesCount}
+                            liked={p.liked}
+                            bookmarked={p.bookmarked}
+                            likes={p.likes}
+                            inCart={cartIds ? cartIds.has(String(p._id || p.id)) : false}
                         />
                         <div className="px-4 pb-4">
                             <RatingStars rating={p.rating} />

@@ -33,6 +33,7 @@ const orderSchema = new mongoose.Schema({
     discountTotal: { type: Number, default: 0 },
     taxTotal: { type: Number, default: 0 },
     shippingFee: { type: Number, default: 0 },
+    platformFee: { type: Number, default: 0 },
     total: { type: Number, required: true },
     currency: { type: String, default: 'INR' },
     shippingAddress: { type: addressSchema, required: true },
@@ -66,7 +67,8 @@ orderSchema.pre('validate', function (next) {
     const discount = this.discountTotal || 0;
     const tax = this.taxTotal || 0;
     const shipping = this.shippingFee || 0;
-    this.total = Math.max(0, subtotal - discount + tax + shipping);
+    const platform = this.platformFee || 0;
+    this.total = Math.max(0, subtotal - discount + tax + shipping + platform);
     next();
 });
 

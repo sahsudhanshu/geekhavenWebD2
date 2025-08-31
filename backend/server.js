@@ -2,32 +2,40 @@ import express from "express";
 import 'dotenv/config'
 import connectDB from "./src/config/database.js";
 import cors from 'cors'
-import { auth, product, cart, upload, order, user } from "./src/routes/index.js";
+import { auth, product, cart, upload, order, user, checkout } from "./src/routes/index.js";
 import path from 'path';
 import expressStatic from 'express';
 
 const app = express();
+const recentLogs = [];
 const PORT = process.env.PORT || 3000;
 const MONGODB_CONNECTION_URI = process.env.MONGODB_CONNECTION_URI
 const DB_NAME = process.env.DB_NAME || 'Test'
 
 app.use(cors())
 app.use(express.json());
-app.use(async (req, res, next) => {
-    console.log(req.query)
-    console.log(req.params)
-    console.log(req.body)
-    next()
-})
+app.use((req, res, next) => {
+    const entry = { method: req.method, path: req.path, at: new Date().toISOString(), ip: req.ip, q: req.query, bodyKeys: Object.keys(req.body || {}) };
+    recentLogs.push(entry);
+    if (recentLogs.length > 50) recentLogs.shift();
+    next();
+});
 app.get('/', (req, res) => {
     res.json({ message: "Server is Running!" })
 })
+app.get(`/${process.env.ROLLNO || 'rollno'}/healthz`, (req, res) => {
+    res.json({ ok: true, ts: Date.now() });
+});
+app.get('/logs/recent', (req, res) => {
+    res.json({ items: recentLogs.slice().reverse() });
+});
 app.use('/api/v1/auth', auth)
 app.use('/api/v1/products', product)
 app.use('/api/v1/cart', cart)
 app.use('/api/v1/upload', upload)
 app.use('/api/v1/user', user)
 app.use('/api/v1/orders', order)
+app.use('/api/v1/checkout', checkout)
 app.use('/uploads', expressStatic.static(path.resolve('uploads')))
 
 connectDB(MONGODB_CONNECTION_URI, DB_NAME).then(() => {

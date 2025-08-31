@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import API from '../services/useFetch';
 import { FilterSidebar } from '../components/home/FilterSidebar';
 import { ProductGrid } from '../components/home/ProductGrid';
+import { useAuth } from '../context/authContext';
 
 interface ListingResponse { items: any[]; nextCursor: string | null }
 
@@ -10,6 +11,8 @@ function HomePage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState<ListingResponse>({ items: [], nextCursor: null });
     const [loading, setLoading] = useState(true);
+    const { token } = useAuth() as any;
+    const [cartIds, setCartIds] = useState<Set<string>>(new Set());
     const categoryParam = searchParams.get('category') || 'all';
     const minParam = Number(searchParams.get('min') || 0) || undefined;
     const maxParam = Number(searchParams.get('max') || 0) || undefined;
@@ -22,7 +25,7 @@ function HomePage() {
             const keys = ['q', 'category', 'min', 'max', 'cursor'];
             keys.forEach(k => { const v = searchParams.get(k); if (v) params.set(k, v); });
             try {
-                const result: any = await API.get(`/products/?${params.toString()}`);
+                const result: any = await API.get(`/products/?${params.toString()}`, token || undefined);
                 const payload = result?.data;
                 if (payload && Array.isArray(payload.items)) setData({ items: payload.items, nextCursor: payload.nextCursor || null });
                 else setData({ items: [], nextCursor: null });
@@ -31,7 +34,23 @@ function HomePage() {
             } finally { setLoading(false); }
         }
         fetchListings();
-    }, [searchParams]);
+    }, [searchParams, token]);
+
+    // Fetch cart items for auth user to sync inCart state
+    useEffect(() => {
+        if (!token) { setCartIds(new Set()); return; }
+        let abort = false;
+        (async () => {
+            try {
+                const res: any = await API.get('/cart', token);
+                if (!abort && res?.data?.items) {
+                    const ids = new Set<string>(res.data.items.map((it: any) => it.product?._id || it.product?.id || it.product));
+                    setCartIds(ids);
+                }
+            } catch { /* ignore */ }
+        })();
+        return () => { abort = true; };
+    }, [token]);
 
     const categories = useMemo(() => {
         const set = new Set<string>();
@@ -95,7 +114,7 @@ function HomePage() {
                         </div>
                     </div>
                 </div>
-                <ProductGrid products={filteredSorted} loading={loading} />
+                <ProductGrid products={filteredSorted} loading={loading} cartIds={cartIds} />
                 <div className="flex justify-center mt-8">
                     {data.nextCursor ? (
                         <button

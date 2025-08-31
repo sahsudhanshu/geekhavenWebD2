@@ -33,18 +33,29 @@ const ProductDetailPage: React.FC = () => {
     const { token, userDetails } = useAuth() as { token?: string; userDetails?: { _id?: string } };
     const navigate = useNavigate();
     const [successMessage, setSuccessMessage] = useState('');
-    const [liked, setLiked] = useState<boolean>(false);
-    const [bookmarked, setBookmarked] = useState<boolean>(false);
+    const [liked, setLiked] = useState<boolean>(!!product.liked);
+    const [bookmarked, setBookmarked] = useState<boolean>(!!product.bookmarked);
     const isValidProduct = product && !product.error && (product._id || product.name);
     const [likesCount, setLikesCount] = useState<number>(isValidProduct ? (product.likesCount || 0) : 0);
+    const [priceHistory, setPriceHistory] = useState<{ price: number; at: string }[]>([]);
 
     useEffect(() => {
-        if (userDetails?._id) {
-            if(product.likes.find((item: any) => item._id === userDetails._id)){
-                setLiked(true);
-            }
-        }
-    }, [])
+        (async () => {
+            try {
+                const id = product._id || product.id;
+                const res = await api.get(`/products/${id}/price-history`);
+                if (res.status === 200 && Array.isArray(res.data.priceHistory)) {
+                    setPriceHistory(res.data.priceHistory);
+                }
+            } catch { /* ignore */ }
+        })();
+    }, [product?._id, product?.id]);
+
+    useEffect(() => {
+        // update if product ref changes
+        setLiked(!!product.liked || (userDetails?._id ? product.likes?.some((item: any) => (item._id || item) === userDetails._id) : false));
+        setBookmarked(!!product.bookmarked);
+    }, [product, userDetails?._id]);
 
     const toggleLike = async () => {
         if (!token) return alert('Login to like products');
@@ -119,6 +130,19 @@ const ProductDetailPage: React.FC = () => {
                             </button>
                             {successMessage && <p className="text-green-600 font-semibold mt-4">{successMessage}</p>}
                             <p className="my-8 leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-line">{product.description}</p>
+                            {priceHistory.length > 1 && (
+                                <div className="mt-6">
+                                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Price History</h2>
+                                    <ol className="space-y-1 max-h-48 overflow-auto pr-1 text-xs text-gray-600 dark:text-gray-400">
+                                        {priceHistory.slice().reverse().map((ph, i) => (
+                                            <li key={i} className="flex justify-between">
+                                                <span>₹{ph.price}</span>
+                                                <time className="tabular-nums opacity-70">{new Date(ph.at).toLocaleDateString()}</time>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <ReviewSection productId={product._id || product.id} initialRating={product.rating} initialNum={product.numReviews} />

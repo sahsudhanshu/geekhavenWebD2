@@ -18,8 +18,8 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}, token?: str
 const API = {
     get: (endpoint: string, token?: string, signal?: AbortSignal) =>
         fetchAPI(endpoint, { method: "GET" }, token, signal),
-    post: (endpoint: string, body: any, token?: string, signal?: AbortSignal) =>
-        fetchAPI(endpoint, { method: "POST", body: JSON.stringify(body) }, token, signal),
+    post: (endpoint: string, body: any, token?: string, signal?: AbortSignal, extraHeaders?: HeadersInit) =>
+        fetchAPI(endpoint, { method: "POST", body: JSON.stringify(body), headers: extraHeaders }, token, signal),
     put: (endpoint: string, body: any, token?: string, signal?: AbortSignal) =>
         fetchAPI(endpoint, { method: "PUT", body: JSON.stringify(body) }, token, signal),
     delete: (endpoint: string, body?: any, token?: string, signal?: AbortSignal) =>

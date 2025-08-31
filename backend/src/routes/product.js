@@ -5,6 +5,20 @@ import { requireSeller } from "../utils/roleMiddleware.js";
 import cloudinary from '../config/cloudinary.js';
 
 const product = Router()
+
+async function optionalAuth(req, _res, next) {
+    const header = req.headers.authorization;
+    if (header && header.startsWith('Bearer ')) {
+        try {
+            // reuse logic from authMiddleware but swallow errors
+            const token = header.split(' ')[1];
+            const jwtImport = await import('jsonwebtoken');
+            const decodedUserId = jwtImport.default.verify(token, process.env.JWT_SECRET).id;
+            req.user = await User.findById(decodedUserId).select('-password');
+        } catch { /* ignore invalid token */ }
+    }
+    next();
+}
 product.post('/', authMiddleware, requireSeller, async (req, res) => {
     try {
         console.log(req)
@@ -21,7 +35,7 @@ product.post('/', authMiddleware, requireSeller, async (req, res) => {
     }
 })
 
-product.get('/', async (req, res) => {
+product.get('/', optionalAuth, async (req, res) => {
     try {
         let { cursor, limit = 10, q, category, min, max } = req.query;
         const lim = Math.min(Math.max(parseInt(limit, 20) || 10, 1), 50);
@@ -54,6 +68,15 @@ product.get('/', async (req, res) => {
             items = docs.slice(0, lim);
         }
 
+        // decorate each item for current user
+        if (req.user) {
+            const uid = req.user._id.toString();
+            items = items.map(p => ({
+                ...p.toObject(),
+                liked: p.likes?.some(l => l.toString() === uid) || false,
+                bookmarked: req.user.bookmarkedProducts?.some(bp => bp.toString() === p._id.toString()) || false
+            }));
+        }
         res.json({ items, nextCursor });
     } catch (error) {
         console.error(error.message);
@@ -88,7 +111,7 @@ product.get('/mine', authMiddleware, requireSeller, async (req, res) => {
     }
 });
 
-product.get('/:id', async (req, res) => {
+product.get('/:id', optionalAuth, async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
             .populate('seller', 'name email')
@@ -98,12 +121,29 @@ product.get('/:id', async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
-        res.json(product);
+        let obj = product.toObject();
+        if (req.user) {
+            const uid = req.user._id.toString();
+            obj.liked = product.likes?.some(l => l.toString() === uid) || false;
+            obj.bookmarked = req.user.bookmarkedProducts?.some(bp => bp.toString() === product._id.toString()) || false;
+        }
+        res.json(obj);
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
     }
 })
+
+product.get('/:id/price-history', async (req, res) => {
+    try {
+        const prod = await Product.findById(req.params.id).select('priceHistory');
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        res.json({ priceHistory: prod.priceHistory || [] });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
 
 product.put('/:id', authMiddleware, requireSeller, async (req, res) => {
     try {
@@ -291,6 +331,17 @@ product.post('/:id/bookmark', authMiddleware, async (req, res) => {
         console.error(e.message);
         res.status(500).json({ message: 'Server Error' });
     }
+});
+
+product.post('/:id/promote', authMiddleware, requireSeller, async (req, res) => {
+    try {
+        const prod = await Product.findById(req.params.id);
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        if (prod.seller.toString() !== req.user.id) return res.status(401).json({ message: 'Not authorized' });
+        prod.promoted = !prod.promoted;
+        await prod.save();
+        res.json({ promoted: prod.promoted });
+    } catch (e) { res.status(500).json({ message: 'Server Error' }); }
 });
 
 export { product }

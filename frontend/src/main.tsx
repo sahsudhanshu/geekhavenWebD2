@@ -113,7 +113,7 @@ const RootProvider: React.FC = () => {
   return (
     <SeedThemeProvider>
       <AuthContextProvider value={{ token, setToken, userDetails, setUserDetails, authReady }}>
-        {!authReady ? (
+  {!authReady ? (
           <div className="min-h-screen flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
             Initializing...
           </div>

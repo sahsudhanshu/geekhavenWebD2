@@ -50,6 +50,12 @@ const productSchema = new Schema({
 
 }, { timestamps: true });
 
+// Track price history
+productSchema.add({
+    priceHistory: [{ price: Number, at: { type: Date, default: Date.now } }]
+});
+productSchema.add({ promoted: { type: Boolean, default: false, index: true } });
+
 productSchema.methods.recalculateRating = function () {
     if (!this.reviews || !this.reviews.length) {
         this.rating = 0;
@@ -77,6 +83,15 @@ productSchema.index({ category: 1, createdAt: -1 });
 productSchema.pre("save", function (next) {
     if (this.isNew) {
         this.sku = generateSku(this._id)
+        if (!this.priceHistory || !this.priceHistory.length) {
+            this.priceHistory = [{ price: this.price, at: new Date() }];
+        }
+    } else if (this.isModified('price')) {
+        // append new price entry
+        this.priceHistory = this.priceHistory || [];
+        this.priceHistory.push({ price: this.price, at: new Date() });
+        // keep only last 20 entries to limit growth
+        if (this.priceHistory.length > 20) this.priceHistory = this.priceHistory.slice(-20);
     }
     next()
 })
