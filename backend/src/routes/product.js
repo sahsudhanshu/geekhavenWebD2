@@ -115,6 +115,8 @@ product.get('/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id)
             .populate('seller', 'name email')
+            .populate('reviews.user', 'name')
+            .populate('likes', 'name')
 
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
@@ -212,6 +214,90 @@ product.delete('/:id/images/:publicId', authMiddleware, requireSeller, async (re
         res.json({ message: 'Image removed', images: prod.images });
     } catch (e) {
         console.error(e);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Add or update a review for a product
+product.post('/:id/reviews', authMiddleware, async (req, res) => {
+    try {
+        const { rating, comment } = req.body;
+        if (!rating || !comment) return res.status(400).json({ message: 'Rating and comment required' });
+        const prod = await Product.findById(req.params.id).populate('reviews.user', 'name');
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        const existing = prod.reviews.find(r => r.user.toString() === req.user.id);
+        if (existing) {
+            existing.rating = rating;
+            existing.comment = comment;
+            existing.createdAt = new Date();
+        } else {
+            prod.reviews.push({ user: req.user.id, name: req.user.name || 'User', rating, comment });
+        }
+        prod.recalculateRating();
+        await prod.save();
+        await prod.populate('reviews.user', 'name');
+        res.status(201).json({ reviews: prod.reviews, rating: prod.rating, numReviews: prod.numReviews });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Get reviews only (lighter payload)
+product.get('/:id/reviews', async (req, res) => {
+    try {
+        const prod = await Product.findById(req.params.id).select('reviews rating numReviews').populate('reviews.user', 'name');
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        res.json({ reviews: prod.reviews, rating: prod.rating, numReviews: prod.numReviews });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Delete a review (review owner or admin)
+product.delete('/:id/reviews/:reviewId', authMiddleware, async (req, res) => {
+    try {
+        const { id, reviewId } = req.params;
+        const prod = await Product.findById(id).populate('reviews.user', 'name');
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        const review = prod.reviews.id(reviewId);
+        if (!review) return res.status(404).json({ message: 'Review not found' });
+        const isOwner = review.user.toString() === req.user.id;
+        const isAdmin = req.user.role === 'admin';
+        if (!isOwner && !isAdmin) return res.status(401).json({ message: 'Not authorized' });
+        review.deleteOne();
+        prod.recalculateRating();
+        await prod.save();
+        res.json({ reviews: prod.reviews, rating: prod.rating, numReviews: prod.numReviews });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Toggle like
+product.post('/:id/like', authMiddleware, async (req, res) => {
+    try {
+        const prod = await Product.findById(req.params.id);
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        prod.toggleLike(req.user.id);
+        await prod.save();
+        res.json({ likesCount: prod.likesCount, liked: prod.likes.some(u => u.toString() === req.user.id) });
+    } catch (e) {
+        console.error(e.message);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Get likes summary
+product.get('/:id/likes', async (req, res) => {
+    try {
+        const prod = await Product.findById(req.params.id).select('likesCount likes');
+        if (!prod) return res.status(404).json({ message: 'Product not found' });
+        res.json({ likesCount: prod.likesCount, likes: prod.likes });
+    } catch (e) {
+        console.error(e.message);
         res.status(500).json({ message: 'Server Error' });
     }
 });

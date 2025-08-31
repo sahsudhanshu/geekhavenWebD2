@@ -4,6 +4,8 @@ import styles from '../layout/ProductDetailPage.module.css';
 import api from '../services/useFetch'; // Our Axios instance
 import { useAuth } from '../context/authContext';
 import ChecksumBadge from './ChecksumBadge';
+import ReviewSection from './reviews/ReviewSection';
+import { Heart } from 'lucide-react';
 
 // 1. THE LOADER (uses env base URL and backend product schema)
 export const productDetailLoader = async ({ params }: LoaderFunctionArgs): Promise<any> => {
@@ -22,6 +24,20 @@ const ProductDetailPage: React.FC = () => {
     const product: any = useLoaderData();
     const { token } = useAuth();
     const [successMessage, setSuccessMessage] = useState('');
+    const [liked, setLiked] = useState<boolean>(false);
+    const [likesCount, setLikesCount] = useState<number>(product.likesCount || 0);
+
+    const toggleLike = async () => {
+        if (!token) return alert('Login to like products');
+        try {
+            const prodId = product._id || product.id;
+            const res = await api.post(`/products/${prodId}/like`, {}, token);
+            if (res.status === 200) {
+                setLikesCount(res.data.likesCount);
+                setLiked(res.data.liked);
+            }
+        } catch (e) { console.error(e); }
+    };
 
     const handleAddToCart = async () => {
         if (!token) {
@@ -55,6 +71,11 @@ const ProductDetailPage: React.FC = () => {
                     <h1>{product.name || product.title}</h1>
                     <p className={styles.condition}>Condition: <strong>{product.condition || 'N/A'}</strong></p>
                     <p className={styles.price}>₹{Number(product.price || 0).toLocaleString()}</p>
+                    <div className="flex items-center gap-4 mb-4">
+                        <button onClick={toggleLike} className={`inline-flex items-center gap-1 text-sm ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`} aria-label="Like product">
+                            <Heart size={18} className={liked ? 'fill-red-500 text-red-500' : ''} /> {likesCount}
+                        </button>
+                    </div>
                     <button className={`btn-accent ${styles.addToCartButton}`} onClick={handleAddToCart}>
                         Add to Cart
                     </button>
@@ -62,6 +83,7 @@ const ProductDetailPage: React.FC = () => {
                     <p className={styles.description}>{product.description}</p>
                 </div>
             </div>
+            <ReviewSection productId={product._id || product.id} initialRating={product.rating} initialNum={product.numReviews} />
         </div>
     );
 };
