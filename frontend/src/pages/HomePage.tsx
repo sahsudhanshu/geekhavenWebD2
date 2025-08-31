@@ -1,22 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import API from '../services/useFetch';
-import { FilterSidebar } from '../components/FilterSidebar';
-import { ProductListHeader } from '../components/ProductListHeader';
-import { ProductGrid } from '../components/ProductGrid';
-import { pseudoRating, clamp } from '../utils/rating';
+import { FilterSidebar } from '../components/home/FilterSidebar';
+import { ProductGrid } from '../components/home/ProductGrid';
 
 interface ListingResponse { items: any[]; nextCursor: string | null }
 
-function useListingSearch() {
+function HomePage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [data, setData] = useState<ListingResponse>({ items: [], nextCursor: null });
     const [loading, setLoading] = useState(true);
     const categoryParam = searchParams.get('category') || 'all';
+    const minParam = Number(searchParams.get('min') || 0) || undefined;
     const maxParam = Number(searchParams.get('max') || 0) || undefined;
     const minRatingParam = Number(searchParams.get('minRating') || 0);
     const sortOrder = searchParams.get('sort') || 'newest';
-
     useEffect(() => {
         async function fetchListings() {
             setLoading(true);
@@ -35,7 +33,6 @@ function useListingSearch() {
         fetchListings();
     }, [searchParams]);
 
-    const maxPriceObserved = useMemo(() => (data.items.length ? Math.max(...data.items.map((p: any) => p.price)) : 100000), [data.items]);
     const categories = useMemo(() => {
         const set = new Set<string>();
         data.items.forEach((p: any) => p.category && set.add(p.category));
@@ -43,9 +40,9 @@ function useListingSearch() {
     }, [data.items]);
 
     const filteredSorted = useMemo(() => {
-        const enriched = data.items.map((p: any) => ({ ...p, rating: clamp(pseudoRating(p._id || p.id || ''), 1, 5) }));
-        return enriched
+        return data.items
             .filter((p: any) => (categoryParam === 'all' ? true : p.category === categoryParam))
+            .filter((p: any) => (minParam ? p.price >= minParam : true))
             .filter((p: any) => (maxParam ? p.price <= maxParam : true))
             .filter((p: any) => p.rating >= minRatingParam)
             .sort((a: any, b: any) => {
@@ -66,31 +63,38 @@ function useListingSearch() {
             return p;
         });
     };
-
-    return { data, loading, categoryParam, maxParam, minRatingParam, sortOrder, maxPriceObserved, categories, filteredSorted, updateParam, setSearchParams } as const;
-}
-
-function HomePage() {
-    const { data, loading, categoryParam, maxParam, minRatingParam, sortOrder, maxPriceObserved, categories, filteredSorted, updateParam, setSearchParams } = useListingSearch();
     return (
         <div className="flex gap-6 px-4 py-6 max-w-7xl mx-auto">
             <FilterSidebar
                 categories={categories}
                 activeCategory={categoryParam}
-                maxPriceObserved={maxPriceObserved}
+                minParam={minParam}
                 maxParam={maxParam}
                 minRatingParam={minRatingParam}
                 onChangeCategory={(c) => updateParam('category', c)}
+                onChangeMin={(v) => updateParam('min', v)}
                 onChangeMax={(v) => updateParam('max', v)}
                 onChangeMinRating={(v) => updateParam('minRating', v)}
                 onReset={() => setSearchParams(() => new URLSearchParams())}
             />
             <main className="flex-1">
-                <ProductListHeader
-                    title={categoryParam === 'all' ? 'All Products' : categories.find((c) => c === categoryParam) || 'Products'}
-                    sortOrder={sortOrder}
-                    onChangeSort={(v) => updateParam('sort', v)}
-                />
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{categoryParam === 'all' ? 'All Products' : categories.find((c) => c === categoryParam) || 'Products'}</h1>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => updateParam('sort', e.target.value)}
+                                className="appearance-none rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 py-2 pl-3 pr-8 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-sky-500"
+                            >
+                                <option value="newest">Newest</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                            </select>
+                            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
+                        </div>
+                    </div>
+                </div>
                 <ProductGrid products={filteredSorted} loading={loading} />
                 <div className="flex justify-center mt-8">
                     {data.nextCursor ? (

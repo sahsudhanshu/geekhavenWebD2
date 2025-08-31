@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import './index.css';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -112,8 +112,16 @@ const RootProvider: React.FC = () => {
 
   return (
     <SeedThemeProvider>
-  <AuthContextProvider value={{ token, setToken, userDetails, setUserDetails, authReady }}>
-        <RouterProvider router={router} />
+      <AuthContextProvider value={{ token, setToken, userDetails, setUserDetails, authReady }}>
+        {!authReady ? (
+          <div className="min-h-screen flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+            Initializing...
+          </div>
+        ) : (
+          <Suspense fallback={<div className="p-4 text-sm text-gray-500 dark:text-gray-400">Loading...</div>}>
+            <RouterProvider router={router} />
+          </Suspense>
+        )}
       </AuthContextProvider>
     </SeedThemeProvider>
   );

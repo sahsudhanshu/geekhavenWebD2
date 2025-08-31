@@ -1,5 +1,5 @@
 import { Mail, Lock, User as UserIcon, ArrowRight } from 'lucide-react';
-import { InputField } from '../../components/InputField';
+import { InputField } from './InputField';
 
 interface Props { fullName: string; email: string; password: string; confirmPassword: string; loading: boolean; error: string | null; info: string | null; onChange: (field: string, value: string) => void; onSubmit: (e: React.FormEvent) => void }
 

@@ -10,6 +10,10 @@ const userSchema = new Schema(
         },
         password: { type: String, required: true },
         contactNumber: { type: String },
+        avatar: {
+            url: String,
+            publicId: String
+        },
         addresses: [{
             name: { type: String, required: true },
             mobileNumber: { type: String, required: true },
@@ -19,20 +23,22 @@ const userSchema = new Schema(
             state: { type: String, required: true },
             district: { type: String, required: true }
         }],
-            role: {
-                type: String,
-                enum: ['user', 'seller', 'admin'],
-                default: 'user'
-            },
+        role: {
+            type: String,
+            enum: ['user', 'seller', 'admin'],
+            default: 'user'
+        },
         likedProducts: [{
             type: mongoose.Schema.ObjectId,
             ref: 'Product',
-            require: true
         }],
         bookmarkedProducts: [{
             type: mongoose.Schema.ObjectId,
             ref: 'Product',
-            require: true
+        }],
+        orders: [{
+            type: mongoose.Schema.ObjectId,
+            ref: 'Order'
         }]
     },
     { timestamps: true }

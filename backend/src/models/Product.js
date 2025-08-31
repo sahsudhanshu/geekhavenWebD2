@@ -50,7 +50,6 @@ const productSchema = new Schema({
 
 }, { timestamps: true });
 
-// Recompute aggregate rating on reviews change
 productSchema.methods.recalculateRating = function () {
     if (!this.reviews || !this.reviews.length) {
         this.rating = 0;

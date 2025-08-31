@@ -5,7 +5,6 @@ import fs from 'fs';
 import authMiddleware from '../utils/authMiddleware.js';
 import { requireSeller } from '../utils/roleMiddleware.js';
 import cloudinary from '../config/cloudinary.js';
-import crypto from 'crypto';
 
 const upload = Router();
 
@@ -32,10 +31,6 @@ upload.post('/images', authMiddleware, requireSeller, uploader.array('images', 6
     res.status(201).json({ urls });
 });
 
-
-export { upload };
-
-// Cloudinary signature endpoint
 upload.post('/cloudinary/sign', authMiddleware, requireSeller, async (req, res) => {
     const { folder = 'products' } = req.body || {};
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
@@ -51,3 +46,5 @@ upload.post('/cloudinary/sign', authMiddleware, requireSeller, async (req, res) 
         res.status(500).json({ message: 'Failed to sign' });
     }
 });
+
+export { upload };

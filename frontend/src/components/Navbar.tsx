@@ -1,7 +1,7 @@
 import { useState, Fragment, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Menu, Transition, Dialog, MenuItem, MenuButton, MenuItems, TransitionChild, DialogTitle, DialogPanel } from '@headlessui/react';
-import { Search, ShoppingCart, Heart, User, Menu as MenuIcon, X, PlusCircle } from 'lucide-react';
+import { Search, ShoppingCart, Heart, Bookmark, User, Menu as MenuIcon, X, PlusCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/authContext';
 import { ThemeButton } from './ThemeButton';
@@ -152,8 +152,11 @@ const Navbar = () => {
                 </button>
                 {isAuth ? (
                     <div className="flex items-center space-x-2">
-                        <Link to="/favorites" className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700">
+                        <Link to="/favorites" className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-500 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700" title="Liked Products">
                             <Heart className="h-6 w-6" />
+                        </Link>
+                        <Link to="/bookmarks" className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700" title="Bookmarked Products">
+                            <Bookmark className="h-6 w-6" />
                         </Link>
                         <Link to="/cart" className="relative p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700">
                             <ShoppingCart className="h-6 w-6" />
@@ -205,6 +208,7 @@ const Navbar = () => {
                                                 {[
                                                     { to: "/marketplace", label: "Marketplace" },
                                                     { to: "/favorites", label: "Favorites" },
+                                                    { to: "/bookmarks", label: "Bookmarks" },
                                                     { to: "/cart", label: "Shopping Cart" },
                                                     { to: "/about", label: "About" },
                                                 ].map(item => (

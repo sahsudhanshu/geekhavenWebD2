@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { Product } from "../models/index.js";
+import { Product, User } from "../models/index.js";
 import authMiddleware from "../utils/authMiddleware.js";
 import { requireSeller } from "../utils/roleMiddleware.js";
 import cloudinary from '../config/cloudinary.js';
@@ -24,7 +24,7 @@ product.post('/', authMiddleware, requireSeller, async (req, res) => {
 product.get('/', async (req, res) => {
     try {
         let { cursor, limit = 10, q, category, min, max } = req.query;
-        const lim = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50); // clamp 1..50
+        const lim = Math.min(Math.max(parseInt(limit, 20) || 10, 1), 50);
 
         const query = {};
         if (q) {
@@ -40,12 +40,9 @@ product.get('/', async (req, res) => {
         if (cursor) {
             const date = new Date(cursor);
             if (isNaN(date.getTime())) return res.status(400).json({ message: 'Invalid cursor' });
-            query.createdAt = { $lt: date }; // fetch items created before the cursor
+            query.createdAt = { $lt: date };
         }
-
-        // Fetch one extra to know if there is a next page
         const docs = await Product.find(query)
-            .populate('seller', 'name email')
             .sort({ createdAt: -1, _id: -1 })
             .limit(lim + 1);
 
@@ -61,26 +58,6 @@ product.get('/', async (req, res) => {
     } catch (error) {
         console.error(error.message);
         res.status(500).send('Server Error');
-    }
-});
-
-product.get('/mine/list', authMiddleware, requireSeller, async (req, res) => {
-    try {
-        const { page = 1, limit = 10 } = req.query;
-        const pageNum = Number(page);
-        const limitNum = Math.min(Number(limit), 100);
-        const skip = (pageNum - 1) * limitNum;
-        const [items, total] = await Promise.all([
-            Product.find({ seller: req.user.id })
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limitNum),
-            Product.countDocuments({ seller: req.user.id })
-        ]);
-        res.json({ items, page: pageNum, total, pages: Math.ceil(total / limitNum) });
-    } catch (e) {
-        console.error(e.message);
-        res.status(500).json({ message: 'Server Error' });
     }
 });
 
@@ -148,7 +125,6 @@ product.put('/:id', authMiddleware, requireSeller, async (req, res) => {
         product.usedCondition = usedCondition ?? product.usedCondition;
         if (images) {
             product.images = images.map(i => ({ url: i.url, publicId: i.publicId }));
-            // Determine removed images and delete from Cloudinary asynchronously (don't block response)
             const newIds = product.images.map(i => i.publicId).filter(Boolean);
             const removed = prevPublicIds.filter(id => id && !newIds.includes(id));
             if (removed.length) {
@@ -218,7 +194,6 @@ product.delete('/:id/images/:publicId', authMiddleware, requireSeller, async (re
     }
 });
 
-// Add or update a review for a product
 product.post('/:id/reviews', authMiddleware, async (req, res) => {
     try {
         const { rating, comment } = req.body;
@@ -243,7 +218,6 @@ product.post('/:id/reviews', authMiddleware, async (req, res) => {
     }
 });
 
-// Get reviews only (lighter payload)
 product.get('/:id/reviews', async (req, res) => {
     try {
         const prod = await Product.findById(req.params.id).select('reviews rating numReviews').populate('reviews.user', 'name');
@@ -255,7 +229,6 @@ product.get('/:id/reviews', async (req, res) => {
     }
 });
 
-// Delete a review (review owner or admin)
 product.delete('/:id/reviews/:reviewId', authMiddleware, async (req, res) => {
     try {
         const { id, reviewId } = req.params;
@@ -276,13 +249,23 @@ product.delete('/:id/reviews/:reviewId', authMiddleware, async (req, res) => {
     }
 });
 
-// Toggle like
 product.post('/:id/like', authMiddleware, async (req, res) => {
     try {
         const prod = await Product.findById(req.params.id);
+        const user = await User.findById(req.user.id);
         if (!prod) return res.status(404).json({ message: 'Product not found' });
+        const wasLiked = prod.likes.some(u => u.toString() === req.user.id);
         prod.toggleLike(req.user.id);
+        if (wasLiked) {
+            // remove from user likedProducts
+            user.likedProducts = user.likedProducts.filter(p => p.toString() !== prod.id.toString());
+        } else {
+            if (!user.likedProducts.some(p => p.toString() === prod.id.toString())) {
+                user.likedProducts.push(prod.id);
+            }
+        }
         await prod.save();
+        await user.save();
         res.json({ likesCount: prod.likesCount, liked: prod.likes.some(u => u.toString() === req.user.id) });
     } catch (e) {
         console.error(e.message);
@@ -290,15 +273,24 @@ product.post('/:id/like', authMiddleware, async (req, res) => {
     }
 });
 
-// Get likes summary
-product.get('/:id/likes', async (req, res) => {
+// bookmark toggle
+product.post('/:id/bookmark', authMiddleware, async (req, res) => {
     try {
-        const prod = await Product.findById(req.params.id).select('likesCount likes');
+        const prod = await Product.findById(req.params.id);
+        const user = await User.findById(req.user.id);
         if (!prod) return res.status(404).json({ message: 'Product not found' });
-        res.json({ likesCount: prod.likesCount, likes: prod.likes });
+        const already = user.bookmarkedProducts.some(p => p.toString() === prod.id.toString());
+        if (already) {
+            user.bookmarkedProducts = user.bookmarkedProducts.filter(p => p.toString() !== prod.id.toString());
+        } else {
+            user.bookmarkedProducts.push(prod.id);
+        }
+        await user.save();
+        res.json({ bookmarked: !already });
     } catch (e) {
         console.error(e.message);
         res.status(500).json({ message: 'Server Error' });
     }
 });
-export { product };
+
+export { product }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ProductCard } from './ui/productCard';
+import { ProductCard } from './productCard';
 import { RatingStars } from './RatingStars';
 
 interface ProductGridProps {

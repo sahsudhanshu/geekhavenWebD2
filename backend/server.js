@@ -2,7 +2,7 @@ import express from "express";
 import 'dotenv/config'
 import connectDB from "./src/config/database.js";
 import cors from 'cors'
-import { auth, product, cart, upload } from "./src/routes/index.js";
+import { auth, product, cart, upload, order, user } from "./src/routes/index.js";
 import path from 'path';
 import expressStatic from 'express';
 
@@ -26,6 +26,8 @@ app.use('/api/v1/auth', auth)
 app.use('/api/v1/products', product)
 app.use('/api/v1/cart', cart)
 app.use('/api/v1/upload', upload)
+app.use('/api/v1/user', user)
+app.use('/api/v1/orders', order)
 app.use('/uploads', expressStatic.static(path.resolve('uploads')))
 
 connectDB(MONGODB_CONNECTION_URI, DB_NAME).then(() => {

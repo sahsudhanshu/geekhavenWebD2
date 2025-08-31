@@ -1,4 +1,5 @@
 import User from "./User.js";
 import Cart from './Cart.js'
 import Product from './Product.js'
-export { User, Cart, Product }
+import Order from './Order.js'
+export { User, Cart, Product, Order }
