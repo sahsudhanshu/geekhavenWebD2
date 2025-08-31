@@ -1,7 +1,7 @@
 import { useState, Fragment, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, Transition, Dialog, MenuItem, MenuButton, MenuItems, TransitionChild } from '@headlessui/react';
-import { Search, ShoppingCart, Heart, User, Menu as MenuIcon, X, PlusCircle} from 'lucide-react';
+import { Menu, Transition, Dialog, MenuItem, MenuButton, MenuItems, TransitionChild, DialogTitle, DialogPanel } from '@headlessui/react';
+import { Search, ShoppingCart, Heart, User, Menu as MenuIcon, X, PlusCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '../context/authContext';
 import { ThemeButton } from './ThemeButton';
@@ -14,7 +14,7 @@ const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
     );
 
 const Navbar = () => {
-    const { token } = useAuth()
+    const { token, userDetails } = useAuth() as any;
     const [isAuth, setIsAuth] = useState(false);
     const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -99,7 +99,11 @@ const Navbar = () => {
             </Link>
             <Link
                 to="/register"
-                className="ml-2 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                className="ml-2 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                style={{
+                    background: 'var(--seed-accent)',
+                    boxShadow: '0 2px 4px 0 rgba(0,0,0,0.06)'
+                }}
             >
                 Sign Up
             </Link>
@@ -110,10 +114,9 @@ const Navbar = () => {
         <div className="hidden lg:flex items-center justify-between h-full">
             <div className="flex items-center space-x-8">
                 <Logo />
-                {/* <nav className="flex items-center space-x-6 text-sm font-medium">
-                    <NavLink to="/marketplace" className={navLinkClasses}>Marketplace</NavLink>
+                <nav className="flex items-center space-x-6 text-sm font-medium">
                     <NavLink to="/about" className={navLinkClasses}>About</NavLink>
-                </nav> */}
+                </nav>
             </div>
             <div className="flex-1 max-w-lg">
                 <div className="relative flex w-full items-center">
@@ -128,20 +131,25 @@ const Navbar = () => {
                     <button
                         onClick={handleSearch}
                         aria-label="Submit search"
-                        className="inline-flex h-[38px] items-center justify-center rounded-r-full border border-transparent bg-indigo-600 dark:bg-sky-500 px-4 text-white transition-colors hover:bg-indigo-700 dark:hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-sky-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                        className="inline-flex h-[38px] items-center justify-center rounded-r-full border border-transparent px-4 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                        style={{ background: 'var(--seed-accent)' }}
                     >
                         <Search className="h-5 w-5" />
                     </button>
                 </div>
             </div>
             <div className="flex items-center space-x-2">
-                {/* <Link
-                    to="/sell"
-                    className="group flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 px-5 py-2 text-sm font-bold text-white shadow-md transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                <button
+                    onClick={() => {
+                        const isSeller = userDetails?.role === 'seller' || userDetails?.role === 'admin';
+                        if (!token) navigate('/login', { state: { from: '/seller/upgrade' } });
+                        else if (!isSeller) navigate('/seller/upgrade');
+                        else navigate('/seller/dashboard');
+                    }}
+                    className="hidden md:inline-flex items-center gap-2 rounded-full btn-accent px-5 py-2 text-sm font-semibold shadow-sm hover:brightness-110 focus:outline-none"
                 >
-                    <PlusCircle className="h-5 w-5 transition-transform duration-200 group-hover:rotate-90" />
-                    Become a Seller
-                </Link> */}
+                    <PlusCircle className="h-5 w-5" /> Sell
+                </button>
                 {isAuth ? (
                     <div className="flex items-center space-x-2">
                         <Link to="/favorites" className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700">
@@ -178,10 +186,10 @@ const Navbar = () => {
                     <div className="absolute inset-0 overflow-hidden">
                         <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
                             <TransitionChild as={Fragment} enter="transform transition ease-in-out duration-300" enterFrom="translate-x-full" enterTo="translate-x-0" leave="transform transition ease-in-out duration-300" leaveFrom="translate-x-0" leaveTo="translate-x-full">
-                                <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
+                                <DialogPanel className="pointer-events-auto w-screen max-w-md">
                                     <div className="flex h-full flex-col overflow-y-scroll bg-white dark:bg-slate-900 py-6 shadow-xl">
                                         <div className="px-4 sm:px-6 flex justify-between items-center">
-                                            <Dialog.Title className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">Menu</Dialog.Title>
+                                            <DialogTitle className="text-base font-semibold leading-6 text-gray-900 dark:text-gray-100">Menu</DialogTitle>
                                             <button type="button" className="rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" onClick={() => setMobileMenuOpen(false)}>
                                                 <X className="h-6 w-6" />
                                             </button>
@@ -189,7 +197,7 @@ const Navbar = () => {
                                         <div className="relative mt-6 flex-1 px-4 sm:px-6">
                                             <div className="relative flex w-full items-center mb-6">
                                                 <input type="search" placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={handleKeyPress} className="w-full rounded-l-full border border-r-0 border-gray-300 dark:border-slate-600 bg-gray-100 dark:bg-slate-700 py-2 pl-4 pr-2 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:z-10 focus:border-indigo-500 dark:focus:border-sky-500 focus:ring-0" />
-                                                <button onClick={handleSearch} aria-label="Submit search" className="inline-flex h-[38px] items-center justify-center rounded-r-full border border-transparent bg-indigo-600 dark:bg-sky-500 px-4 text-white transition-colors hover:bg-indigo-700 dark:hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-sky-500">
+                                                <button onClick={handleSearch} aria-label="Submit search" className="inline-flex h-[38px] items-center justify-center rounded-r-full border border-transparent px-4 text-white transition-colors" style={{ background: 'var(--seed-accent)' }}>
                                                     <Search className="h-5 w-5" />
                                                 </button>
                                             </div>
@@ -216,19 +224,25 @@ const Navbar = () => {
                                                 ) : (
                                                     <div className="flex flex-col space-y-3">
                                                         <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="rounded-md border border-gray-300 dark:border-slate-600 px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-800">Login</Link>
-                                                        <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="rounded-md bg-indigo-600 px-4 py-2 text-center font-semibold text-white shadow-sm hover:bg-indigo-500">Sign Up</Link>
+                                                        <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="rounded-md px-4 py-2 text-center font-semibold text-white shadow-sm" style={{ background: 'var(--seed-accent)' }}>Sign Up</Link>
                                                     </div>
                                                 )}
-                                                <Link to="/sell" onClick={() => setMobileMenuOpen(false)} className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-emerald-400">
+                                                <button onClick={() => {
+                                                    const isSeller = userDetails?.role === 'seller' || userDetails?.role === 'admin';
+                                                    if (!token) navigate('/login', { state: { from: '/seller/upgrade' } });
+                                                    else if (!isSeller) navigate('/seller/upgrade');
+                                                    else navigate('/seller/dashboard');
+                                                    setMobileMenuOpen(false);
+                                                }} className="mt-6 flex w-full items-center justify-center gap-2 rounded-md btn-accent px-4 py-3 text-sm font-semibold text-white shadow-sm">
                                                     <PlusCircle className="h-5 w-5" /> Sell an Item
-                                                </Link>
+                                                </button>
                                                 <div className="mt-6 flex justify-center">
                                                     <ThemeButton />
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </Dialog.Panel>
+                                </DialogPanel>
                             </TransitionChild>
                         </div>
                     </div>
@@ -247,6 +261,4 @@ const Navbar = () => {
         </header>
     );
 };
-
-export default Navbar;
-
+export default Navbar

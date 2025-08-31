@@ -3,4 +3,5 @@ export interface AuthContextType {
     setToken: (token: string | null) => void;
     userDetails: {} | null;
     setUserDetails: (detail: {} | null) => void;
+    authReady?: boolean;
 }
