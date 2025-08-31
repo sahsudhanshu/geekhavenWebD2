@@ -2,6 +2,8 @@ import { Router } from "express";
 import { User } from "../models/index.js";
 import generateToken from './../utils/tokenGenerator.js';
 import jwt from 'jsonwebtoken';
+import authMiddleware from '../utils/authMiddleware.js';
+import { requireAdmin } from '../utils/roleMiddleware.js';
 
 const auth = Router()
 auth.post('/register', async (req, res) => {
@@ -74,6 +76,41 @@ auth.post('/validate', async (req, res) => {
             return res.status(401).json({ message: 'Token expired, please login again!' });
         }
         return res.status(401).json({ message: 'Not authorized, token failed' });
+    }
+});
+
+auth.post('/promote/:id/seller', authMiddleware, requireAdmin, async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        user.role = 'seller';
+        await user.save();
+        res.status(200).json({ message: 'User promoted to seller', id: user._id });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+auth.post('/self/upgrade-seller', authMiddleware, async (req, res) => {
+    try {
+        const { phone, address } = req.body || {};
+        if (!phone || !address || !address.name || !address.mobileNumber || !address.address_line_1 || !address.pincode || !address.state || !address.district) {
+            return res.status(400).json({ message: 'Complete seller phone and address required' });
+        }
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (user.role === 'seller') return res.status(200).json({ message: 'Already seller' });
+        user.contactNumber = phone;
+        if (!user.addresses || user.addresses.length === 0) {
+            user.addresses = [address];
+        }
+        user.role = 'seller';
+        await user.save();
+        res.status(200).json({ message: 'Upgraded to seller' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

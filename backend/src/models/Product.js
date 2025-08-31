@@ -19,7 +19,10 @@ const productSchema = new Schema({
             return this.condition === "Used";
         }
     },
-    images: [{ type: String }],
+    images: [{
+        url: { type: String, required: true },
+        publicId: { type: String }
+    }],
     seller: {
         type: Schema.Types.ObjectId,
         ref: 'User',

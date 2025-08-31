@@ -7,12 +7,17 @@ import App from './App.tsx';
 import HomePage from './pages/HomePage.tsx';
 import ErrorPage from './pages/ErrorPage.tsx';
 
-import ProductListPage, { productListLoader, } from './pages/ProductListPage.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import ProtectedRoute from './components/auth.tsx';
 import ProfilePage from './pages/ProfilePage.tsx';
 import ProductDetailPage, { productDetailLoader } from './components/ProductDetailPage.tsx';
 import API from './services/useFetch.tsx';
+import CartPage from './pages/CartPage.tsx';
+import AboutPage from './pages/AboutPage.tsx';
+import { SeedThemeProvider } from './context/seedTheme.tsx';
+import LogsRecentPage from './pages/LogsRecentPage.tsx';
+import SellerDashboardPage from './pages/SellerDashboardPage.tsx';
+import SellerUpgradePage from './pages/SellerUpgradePage.tsx';
 
 const router = createBrowserRouter([
   {
@@ -25,11 +30,6 @@ const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: 'products',
-        element: <ProductListPage />,
-        loader: productListLoader,
-      },
-      {
         path: 'profile',
         element: (<ProtectedRoute><ProfilePage /></ProtectedRoute>)
       },
@@ -38,6 +38,26 @@ const router = createBrowserRouter([
         element: <ProductDetailPage />,
         loader: productDetailLoader,
       },
+      {
+        path: 'cart',
+        element: <CartPage />
+      },
+      {
+        path: 'logs/recent',
+        element: <LogsRecentPage />
+      },
+      {
+        path: 'about',
+        element: <AboutPage />
+      },
+      {
+        path: 'seller/dashboard',
+        element: (<ProtectedRoute><SellerDashboardPage /></ProtectedRoute>)
+      }
+      ,{
+        path: 'seller/upgrade',
+        element: (<ProtectedRoute><SellerUpgradePage /></ProtectedRoute>)
+      }
     ],
   },
   {
@@ -53,6 +73,7 @@ const router = createBrowserRouter([
 const RootProvider: React.FC = () => {
   const [token, setTokenState] = useState<string | null>(null);
   const [userDetails, setUserDetailsState] = useState<{} | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const setToken = (token: string | null) => {
     setTokenState(token)
     if (token !== null) {
@@ -84,14 +105,17 @@ const RootProvider: React.FC = () => {
       else {
         localStorage.removeItem('token')
       }
+      setAuthReady(true);
     }
     validTokenChecker()
   }, [])
 
   return (
-    <AuthContextProvider value={{ token, setToken, userDetails, setUserDetails }}>
-      <RouterProvider router={router} />
-    </AuthContextProvider>
+    <SeedThemeProvider>
+  <AuthContextProvider value={{ token, setToken, userDetails, setUserDetails, authReady }}>
+        <RouterProvider router={router} />
+      </AuthContextProvider>
+    </SeedThemeProvider>
   );
 }
 

@@ -19,6 +19,11 @@ const userSchema = new Schema(
             state: { type: String, required: true },
             district: { type: String, required: true }
         }],
+            role: {
+                type: String,
+                enum: ['user', 'seller', 'admin'],
+                default: 'user'
+            },
         likedProducts: [{
             type: mongoose.Schema.ObjectId,
             ref: 'Product',
