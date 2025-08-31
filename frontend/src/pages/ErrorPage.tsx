@@ -1,30 +1,19 @@
 import { useRouteError, isRouteErrorResponse, Link } from 'react-router-dom';
 
 const ErrorPage: React.FC = () => {
-    // This hook captures the error thrown from the loader
     const error = useRouteError();
-    console.error(error);
-
     let errorMessage = 'An unexpected error occurred.';
     let errorStatus = 500;
-
-    // The `isRouteErrorResponse` helper checks if the error is a Response object
-    // which we threw in our loader.
     if (isRouteErrorResponse(error)) {
-        errorMessage = error.data || error.statusText;
+        errorMessage = (error as any).data || error.statusText;
         errorStatus = error.status;
     }
-
     return (
-        <div style={{ textAlign: 'center', padding: '5rem' }}>
-            <h1>Oops!</h1>
-            <p>Sorry, something went wrong.</p>
-            <p>
-                <i>
-                    {errorStatus}: {errorMessage}
-                </i>
-            </p>
-            <Link to="/" style={{ color: 'blue' }}>Go back to Home</Link>
+        <div className="text-center py-20 px-6">
+            <h1 className="text-3xl font-semibold mb-2">Oops!</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Sorry, something went wrong.</p>
+            <p className="italic text-sm text-gray-500 dark:text-gray-500 mb-6">{errorStatus}: {errorMessage}</p>
+            <Link to="/" className="text-accent-600 dark:text-accent-400 hover:underline">Go back to Home</Link>
         </div>
     );
 };
