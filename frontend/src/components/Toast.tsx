@@ -1,6 +1,5 @@
-// src/components/toast/ToastMessage.tsx
 import React, { useEffect, useState } from 'react';
-import { Toast, ToastType } from './types';
+import type { Toast, ToastType } from '../types/toast';
 
 const ICONS: Record<ToastType, string> = {
     success: '✅',
@@ -28,14 +27,14 @@ export const ToastMessage: React.FC<ToastMessageProps> = ({ toast, onDismiss }) 
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsExiting(true);
-        }, 5000); // Auto-dismiss after 5 seconds
+        }, 5000);
 
         return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
         if (isExiting) {
-            const timer = setTimeout(() => onDismiss(id), 500); // Wait for animation to finish
+            const timer = setTimeout(() => onDismiss(id), 500);
             return () => clearTimeout(timer);
         }
     }, [isExiting, onDismiss, id]);
