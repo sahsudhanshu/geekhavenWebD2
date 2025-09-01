@@ -23,6 +23,7 @@ const BookmarkedProductsPage: React.FC = () => {
         } catch { if (reset) setItems([]); } finally { setLoading(false); }
     };
     useEffect(() => { load(true); }, [token]);
+    // Auto refresh when a bookmark toggle happens anywhere
     useEffect(() => {
         if (!token) return;
         if (!logs.length) return;
